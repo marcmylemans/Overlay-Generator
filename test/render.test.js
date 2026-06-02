@@ -60,6 +60,46 @@ function pngDims(buf) {
     assert.strictEqual(qr.get(3, 3), true);
   });
 
+  await test('terminal prompt is configurable (BUG-1)', () => {
+    const def = render.renderOverlay('terminal', render.mergeData({}));
+    const ps = render.renderOverlay('terminal', render.mergeData({ terminal: { prompt: 'PS C:\\>' } }));
+    assert.ok(!def.equals(ps), 'changing the prompt should change the render');
+    // empty prompt is honoured (no prefix drawn) and differs from default
+    const none = render.renderOverlay('terminal', render.mergeData({ terminal: { prompt: '' } }));
+    assert.ok(!def.equals(none), 'empty prompt should drop the prefix');
+  });
+
+  await test('terminal prompt is exposed in defaults/schema', () => {
+    assert.strictEqual(render.defaultData().terminal.prompt, 'root@pve:~#');
+  });
+
+  await test('renderPack returns ordered, numbered, collision-free files (ENH-1)', () => {
+    const files = render.renderPack([
+      { key: 'slate', fields: { title: 'Episode title' } },
+      { key: 'chapter', fields: { num: '01', title: 'First' } },
+      { key: 'terminal', fields: { prompt: 'PS C:\\>', cmd: 'Get-Service' } },
+      { key: 'terminal', fields: { prompt: 'PS C:\\>', cmd: 'Restart-Service' } }
+    ]);
+    assert.deepStrictEqual(files.map((f) => f.name),
+      ['01_slate.png', '02_chapter.png', '03_terminal.png', '04_terminal.png']);
+    // same type, different copy → different bytes
+    assert.ok(!files[2].data.equals(files[3].data));
+    files.forEach((f) => assert.ok(f.data.slice(0, 8).equals(PNG_SIG)));
+  });
+
+  await test('renderPack honours caller filenames and stays sortable', () => {
+    const files = render.renderPack([
+      { key: 'chapter', fields: {}, filename: 'intro' },
+      { key: 'chapter', fields: {}, filename: 'intro' } // duplicate label, still unique via index
+    ]);
+    assert.deepStrictEqual(files.map((f) => f.name), ['01_intro.png', '02_intro.png']);
+  });
+
+  await test('renderPack rejects empty input and unknown keys', () => {
+    assert.throws(() => render.renderPack([]), /non-empty/);
+    assert.throws(() => render.renderPack([{ key: 'nope' }]), /unknown key/);
+  });
+
   await test('createZip yields a valid End-Of-Central-Directory record', () => {
     const zip = createZip([
       { name: 'a.png', data: render.renderOverlay('chapter', render.mergeData({})) },

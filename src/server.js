@@ -106,6 +106,26 @@ function handleSingle(source) {
   };
 }
 
+// Ordered pack: render an arbitrary, ordered list of overlay *instances*
+// (many of the same type allowed) into a single numbered .zip. Registered
+// before the `:key` routes so "pack.zip" isn't mistaken for an overlay key.
+//   POST /api/overlays/pack.zip
+//   { "name": "episode-02", "overlays": [ { "key": "slate", "fields": {…} }, … ] }
+app.post('/api/overlays/pack.zip', (req, res) => {
+  try {
+    const body = req.body || {};
+    const files = render.renderPack(body.overlays);
+    const zip = createZip(files);
+    const name = body.name ? String(body.name).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') : '';
+    res.set('Content-Type', 'application/zip');
+    res.set('Content-Disposition', `attachment; filename="${name || 'overlay-pack'}.zip"`);
+    res.set('Cache-Control', 'no-store');
+    res.send(zip);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
 app.get('/api/overlays/:key.png', handleSingle((req) => req.query));
 app.post('/api/overlays/:key.png', handleSingle((req) => req.body));
 // Accept the same without the .png suffix for convenience.

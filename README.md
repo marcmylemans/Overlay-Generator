@@ -147,6 +147,30 @@ curl -X POST http://localhost:3000/api/overlays.zip \
   -o pack.zip
 ```
 
+### `POST /api/overlays/pack.zip` — ordered episode pack
+Render an **ordered list of overlay instances** (many of the same type allowed)
+into one numbered, play-ordered zip — the whole episode in a single call.
+
+```bash
+curl -X POST http://localhost:3000/api/overlays/pack.zip \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "name": "script-02-powershell",
+        "overlays": [
+          { "key": "slate",    "fields": { "title": "10 PowerShell Commands" } },
+          { "key": "chapter",  "fields": { "num": "01", "title": "Find your way around" } },
+          { "key": "terminal", "fields": { "prompt": "PS C:\\>", "cmd": "Get-Command *service*" } },
+          { "key": "terminal", "fields": { "prompt": "PS C:\\>", "cmd": "Get-Help Restart-Service" } }
+        ]
+      }' \
+  -o script-02-powershell.zip
+```
+
+Returns `01_slate.png`, `02_chapter.png`, `03_terminal.png`, `04_terminal.png` —
+zero-padded, sortable and collision-free even with repeated types. Each instance
+may set an optional `filename` (used as `NN_<filename>.png`). Unlike
+`overlays.zip` (one of each type), this is built for real multi-beat episodes.
+
 ### Content model
 
 Every field is optional; anything you omit keeps its default. Field names per
@@ -156,7 +180,7 @@ overlay come straight from `GET /api/overlays`:
 |-----|--------|
 | `slate`    | `eyebrow`, `title`, `subtitle`, `brand`, `url` |
 | `chapter`  | `label`, `num`, `title` |
-| `terminal` | `title`, `comment`, `cmd` *(newline-separated lines)* |
+| `terminal` | `title`, `prompt` *(in-card prompt, e.g. `PS C:\>`; empty = none)*, `comment`, `cmd` *(newline-separated lines)* |
 | `tip`      | `label`, `title`, `body` |
 | `credit`   | `prefix`, `url`, `qr` *(boolean)*, `qrUrl` |
 | `bug`      | `name`, `handle`, `button` |
