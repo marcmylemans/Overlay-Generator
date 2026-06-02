@@ -67,9 +67,10 @@
   function renderTerminal() {
     const body = document.querySelector('#t-body'); if (!body) return;
     const lines = DATA.terminal.cmd.split('\n');
+    const prompt = DATA.terminal.prompt;
     let html = '<div class="ln"><span class="cmt">' + esc(DATA.terminal.comment) + '</span></div>';
     lines.forEach((ln, i) => {
-      const pre = i === 0 ? '<span class="pr">root@pve:~#</span> ' : '';
+      const pre = (i === 0 && prompt) ? '<span class="pr">' + esc(prompt) + '</span> ' : '';
       const span = Core.tokens(ln).map((tk) => '<span class="' + tk.cls + '">' + esc(tk.t) + '</span>').join('');
       const cur = i === lines.length - 1 ? '<span class="cur"></span>' : '';
       html += '<div class="ln">' + pre + span + cur + '</div>';
@@ -102,7 +103,7 @@
     { grp: 'Chapter label', key: 'chapter', items: [
       ['label', 'Step label', 'text'], ['num', 'Step number', 'text'], ['title', 'Chapter title', 'text']] },
     { grp: 'Command callout', key: 'terminal', items: [
-      ['title', 'Title bar', 'text'], ['comment', 'Comment line', 'text'], ['cmd', 'Command (one per line)', 'area']] },
+      ['title', 'Title bar', 'text'], ['prompt', 'Prompt', 'text'], ['comment', 'Comment line', 'text'], ['cmd', 'Command (one per line)', 'area']] },
     { grp: 'Key takeaway', key: 'tip', items: [
       ['label', 'Label', 'text'], ['title', 'Title', 'text'], ['body', 'Body', 'area']] },
     { grp: 'Source / URL strip', key: 'credit', items: [
