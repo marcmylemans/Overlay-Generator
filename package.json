@@ -1,0 +1,25 @@
+{
+  "name": "overlay-generator",
+  "version": "1.0.0",
+  "description": "Mylemans Online DaVinci Resolve overlay pack — an interactive 4K studio plus a REST API for automated, transparent PNG overlay generation.",
+  "type": "commonjs",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "test": "node test/render.test.js"
+  },
+  "keywords": [
+    "davinci-resolve",
+    "overlay",
+    "canvas",
+    "png",
+    "4k",
+    "broadcast-graphics"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.58",
+    "express": "^4.19.2"
+  }
+}

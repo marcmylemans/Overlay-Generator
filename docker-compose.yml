@@ -1,0 +1,15 @@
+services:
+  overlay-generator:
+    # Use the published image…
+    image: ghcr.io/marcmylemans/overlay-generator:latest
+    # …or build locally instead by commenting out `image:` above and using:
+    # build: .
+    container_name: overlay-generator
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    # Optional: bundle your own fonts (Inter / JetBrains Mono) for exact output.
+    # volumes:
+    #   - ./fonts:/app/fonts:ro

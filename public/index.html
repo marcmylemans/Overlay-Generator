@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mylemans Online — DaVinci Resolve Overlay Pack</title>
+<script src="image-slot.js"></script>
+<script src="logo-data.js"></script>
+<script src="/lib/qrcode.js"></script>
+<script src="/lib/overlay-core.js"></script>
+<script src="overlay-studio.js"></script>
+<style>
+  /* ===== Brand tokens (Mylemans Online) ===== */
+  :root{
+    --navy-950:#020617; --navy-900:#0b0f1a; --navy-800:#0f172a; --navy-750:#0b1120;
+    --navy-700:#1e293b; --navy-600:#334155;
+    --slate-400:#94a3b8; --slate-500:#64748b; --gray-400:#9ca3af; --gray-200:#e5e7eb;
+    --blue-400:#60a5fa; --blue-500:#3b82f6; --blue-600:#2563eb; --blue-700:#1d4ed8; --sky-400:#38bdf8;
+    --white:#fff;
+    --font-sans: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --font-mono: ui-monospace,"SF Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --grad-primary: linear-gradient(135deg,#2563eb,#38bdf8);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:#0a0e17;
+    color:var(--gray-200);
+    font-family:var(--font-sans);
+    display:flex; min-height:100vh;
+    overflow:hidden;
+  }
+
+  /* ===== App chrome (NOT exported) ===== */
+  .app{display:flex; width:100%; height:100vh;}
+  .panel{
+    width:340px; flex:0 0 340px; height:100vh; overflow-y:auto;
+    background:linear-gradient(to bottom,#0d1320,#080b12);
+    border-right:1px solid rgba(148,163,184,.16);
+    padding:22px 20px 40px;
+  }
+  .brand{display:flex; align-items:center; gap:11px; margin-bottom:4px;}
+  .brand img{width:34px; height:34px;}
+  .brand .bt{font-weight:700; font-size:15px; letter-spacing:-.01em; color:#fff;}
+  .brand .bs{font-size:11px; color:var(--slate-400); letter-spacing:.12em; text-transform:uppercase;}
+  .panel h1{font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--slate-400);
+    font-weight:600; margin:26px 0 14px;}
+  .ov-list{display:flex; flex-direction:column; gap:9px;}
+  .ov-item{
+    border:1px solid rgba(148,163,184,.16); border-radius:12px; padding:12px 13px;
+    background:rgba(15,23,42,.5); cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .ov-item:hover{border-color:rgba(56,189,248,.5); background:rgba(15,23,42,.85);}
+  .ov-item.active{border-color:var(--sky-400); background:rgba(37,99,235,.13);}
+  .ov-item .r1{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .ov-item .nm{font-size:13.5px; font-weight:600; color:#eef2f7;}
+  .ov-item .pos{font-size:10.5px; color:var(--slate-500); font-family:var(--font-mono); margin-top:3px;}
+  .ov-item .num{font-family:var(--font-mono); font-size:11px; color:var(--sky-400);
+    border:1px solid rgba(56,189,248,.35); border-radius:6px; padding:1px 6px;}
+  .ctl-row{display:flex; gap:8px; margin:18px 0 6px;}
+  .btn{
+    flex:1; border:1px solid rgba(148,163,184,.22); background:rgba(15,23,42,.6);
+    color:#dbe3ee; font-family:var(--font-sans); font-size:12.5px; font-weight:600;
+    padding:9px 10px; border-radius:999px; cursor:pointer; transition:.15s;
+  }
+  .btn:hover{border-color:var(--sky-400); color:#fff;}
+  .btn.primary{background:var(--grad-primary); border:none; color:#fff;
+    box-shadow:0 8px 20px rgba(37,99,235,.4);}
+  .btn.primary:hover{filter:brightness(1.06);}
+  .toggle-row{display:flex; align-items:center; gap:9px; margin-top:16px; font-size:12.5px; color:var(--slate-400);}
+  .sw{width:38px; height:22px; border-radius:999px; background:rgba(148,163,184,.25); position:relative;
+    cursor:pointer; transition:.18s; flex:0 0 38px;}
+  .sw::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:#fff; transition:.18s;}
+  .sw.on{background:var(--blue-600);}
+  .sw.on::after{transform:translateX(16px);}
+  .hint{font-size:11.5px; line-height:1.55; color:var(--slate-500); margin-top:22px;
+    border-top:1px solid rgba(148,163,184,.12); padding-top:16px;}
+  .hint b{color:var(--slate-400); font-weight:600;}
+
+  /* editor */
+  .ed-sec{border-top:1px solid rgba(148,163,184,.1); padding-top:4px; margin-top:10px;}
+  .ed-head{display:flex; align-items:center; justify-content:space-between; margin:6px 0 9px;}
+  .ed-head>span{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--slate-400); font-weight:600;}
+  .ed-dl{font-size:10px; font-weight:600; color:var(--sky-400); background:rgba(56,189,248,.1);
+    border:1px solid rgba(56,189,248,.32); border-radius:999px; padding:4px 11px; cursor:pointer; transition:.15s;}
+  .ed-dl:hover{background:rgba(56,189,248,.22); color:#bfe6ff;}
+  .ed-row{display:flex; flex-direction:column; gap:4px; margin-bottom:9px;}
+  .ed-lab{font-size:10.5px; color:var(--slate-500);}
+  .ed-inp{background:rgba(15,23,42,.7); border:1px solid rgba(148,163,184,.2); border-radius:8px;
+    color:#e6edf6; font-family:var(--font-sans); font-size:12.5px; line-height:1.4; padding:7px 9px;
+    outline:none; resize:vertical; width:100%;}
+  textarea.ed-inp{font-family:var(--font-mono); font-size:11.5px;}
+  .ed-inp:focus{border-color:var(--sky-400);}
+  .ed-check{flex-direction:row; align-items:center; gap:9px; cursor:pointer; margin-top:2px;}
+  .ed-check .ed-lab{font-size:12.5px; color:#cdd7e4;}
+  .ed-cbx{width:16px; height:16px; accent-color:var(--blue-600); cursor:pointer; margin:0;}
+
+  /* QR card on credit strip */
+  #ov-credit .cr-qr{position:absolute; left:0; bottom:calc(100% + 24px);}
+  #ov-credit .cr-qr canvas{display:block;}
+
+  /* ===== Stage area ===== */
+  .stage-wrap{flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(37,99,235,.08), transparent 60%),
+      repeating-conic-gradient(#0c111c 0% 25%, #0a0e17 0% 50%) 50%/26px 26px;}
+  .scaler{position:absolute; top:50%; left:50%; transform-origin:center center;}
+  .stage{
+    width:3840px; height:2160px; position:relative; overflow:hidden;
+    background:#060912;
+  }
+  .res-tag{position:absolute; top:14px; right:18px; z-index:50; font-family:var(--font-mono);
+    font-size:12px; color:var(--slate-400); background:rgba(8,11,18,.8);
+    border:1px solid rgba(148,163,184,.2); border-radius:7px; padding:5px 9px;}
+
+  /* ===== Sample background ===== */
+  .bg-fill{position:absolute; inset:0;}
+  image-slot{position:absolute; inset:0; width:100%; height:100%;}
+  .bg-mock{position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(37,99,235,.16), transparent 55%),
+      radial-gradient(ellipse at 80% 90%, rgba(56,189,248,.10), transparent 50%),
+      linear-gradient(135deg,#0a1426,#070b14 60%,#0a0f1c);}
+  .bg-mock::after{content:""; position:absolute; inset:0; opacity:.5;
+    background-image:linear-gradient(rgba(148,163,184,.05) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(148,163,184,.05) 1px,transparent 1px);
+    background-size:120px 120px;}
+
+  /* ===== Safe area guides ===== */
+  .safe{position:absolute; inset:0; z-index:40; pointer-events:none; display:none;}
+  .safe.show{display:block;}
+  .safe .ti,.safe .ac{position:absolute; border:2px dashed rgba(56,189,248,.45);}
+  .safe .ti{inset:5%;}
+  .safe .ac{inset:3.5%; border-color:rgba(148,163,184,.3);}
+  .safe span{position:absolute; font-family:var(--font-mono); font-size:22px; color:rgba(56,189,248,.7);
+    top:calc(5% + 8px); left:calc(5% + 12px);}
+
+  /* ================================================================
+     OVERLAYS  — all positioned in true 3840×2160 space
+     ================================================================ */
+  .ov{position:absolute;}
+  .ov.is-hidden{opacity:0; visibility:hidden;}
+  .ov[data-dir="left"]{--enter:translateX(-90px);}
+  .ov[data-dir="right"]{--enter:translateX(90px);}
+  .ov[data-dir="up"]{--enter:translateY(70px);}
+  .ov[data-dir="down"]{--enter:translateY(-70px);}
+  .ov[data-dir="scale"]{--enter:scale(1.04);}
+  .ov.play{animation:ovIn .6s cubic-bezier(.16,1,.3,1);}
+  .ov.playout{animation:ovOut .42s ease both;}
+  @keyframes ovIn{from{opacity:0; transform:var(--enter,none);} to{opacity:1; transform:none;}}
+  @keyframes ovOut{from{opacity:1; transform:none;} to{opacity:0; transform:var(--enter,none);}}
+  @media (prefers-reduced-motion: reduce){ .ov.play,.ov.playout{animation:none !important;} }
+
+  .mono{font-family:var(--font-mono);}
+
+  /* ---- 1. Title slate (full frame, opaque) ---- */
+  #ov-slate{inset:0; width:3840px; height:2160px;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(37,99,235,.30), transparent 55%),
+      radial-gradient(circle at 92% 88%, rgba(56,189,248,.16), transparent 50%),
+      linear-gradient(140deg,#0b1730,#060b16 62%,#080d1a);}
+  #ov-slate .inner{position:absolute; left:384px; top:50%; transform:translateY(-50%); max-width:2700px;}
+  #ov-slate .eyebrow{font-size:42px; letter-spacing:.28em; text-transform:uppercase;
+    color:var(--sky-400); font-weight:600; margin:0 0 40px;}
+  #ov-slate h2{font-size:188px; line-height:1.02; font-weight:700; letter-spacing:-.03em;
+    color:#fff; margin:0; text-wrap:balance;}
+  #ov-slate .rule{width:240px; height:10px; border-radius:999px; background:var(--grad-primary); margin:54px 0 40px;}
+  #ov-slate .sub{font-size:58px; line-height:1.4; color:#c4d0e0; font-weight:400; margin:0; max-width:2200px;}
+  #ov-slate .foot{position:absolute; left:384px; bottom:150px; display:flex; align-items:center; gap:22px;}
+  #ov-slate .foot img{width:74px; height:74px;}
+  #ov-slate .foot .ft{font-size:42px; font-weight:700; color:#fff; letter-spacing:-.01em;}
+  #ov-slate .foot .fh{font-size:34px; color:var(--slate-400); font-family:var(--font-mono);}
+
+  /* ---- 2. Chapter / topic label (top-left) ---- */
+  #ov-chapter{top:150px; left:192px; display:flex; align-items:stretch; height:150px;
+    border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(2,6,23,.55);}
+  #ov-chapter .step{background:var(--grad-primary); display:flex; flex-direction:column;
+    justify-content:center; padding:0 46px; color:#fff;}
+  #ov-chapter .step .k{font-size:24px; letter-spacing:.22em; text-transform:uppercase; opacity:.85; font-weight:600;}
+  #ov-chapter .step .v{font-family:var(--font-mono); font-size:74px; font-weight:700; line-height:1;}
+  #ov-chapter .body{background:rgba(11,17,32,.94); border:1px solid rgba(148,163,184,.22); border-left:none;
+    display:flex; align-items:center; padding:0 56px;}
+  #ov-chapter .body .tt{font-size:66px; font-weight:600; color:#fff; letter-spacing:-.01em; white-space:nowrap;}
+
+  /* ---- 3. Code / command callout (terminal) ---- */
+  #ov-terminal{left:192px; top:600px; width:2120px;
+    border-radius:20px; overflow:hidden; box-shadow:0 40px 90px rgba(2,6,23,.6);
+    border:1px solid rgba(148,163,184,.2);}
+  #ov-terminal .tbar{height:88px; background:#0d1424; display:flex; align-items:center; gap:30px; padding:0 36px;
+    border-bottom:1px solid rgba(148,163,184,.16);}
+  #ov-terminal .dots{display:flex; gap:16px;}
+  #ov-terminal .dots i{width:26px; height:26px; border-radius:50%; display:block;}
+  #ov-terminal .tt{font-family:var(--font-mono); font-size:34px; color:var(--slate-400);}
+  #ov-terminal .body{background:rgba(6,10,20,.96); padding:46px 44px; font-family:var(--font-mono);
+    font-size:52px; line-height:1.5;}
+  #ov-terminal .ln{white-space:pre-wrap; word-break:break-word;}
+  #ov-terminal .cmt{color:var(--slate-500);}
+  #ov-terminal .pr{color:var(--sky-400);}
+  #ov-terminal .fl{color:var(--blue-400);}
+  #ov-terminal .tx{color:#e9eef6;}
+  #ov-terminal .cur{display:inline-block; width:26px; height:54px; background:var(--sky-400);
+    vertical-align:-8px; margin-left:8px;}
+
+  /* ---- 4. Key takeaway / tip callout (right) ---- */
+  #ov-tip{right:192px; top:540px; width:1240px;
+    background:rgba(11,17,32,.95); border:1px solid rgba(148,163,184,.22); border-radius:24px;
+    padding:54px 56px 56px; box-shadow:0 40px 90px rgba(2,6,23,.6);}
+  #ov-tip .badge{display:inline-flex; align-items:center; gap:18px; margin-bottom:34px;}
+  #ov-tip .badge .ic{width:72px; height:72px; border-radius:18px; background:var(--grad-primary);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 10px 26px rgba(37,99,235,.5);}
+  #ov-tip .badge .ic svg{width:40px; height:40px;}
+  #ov-tip .badge .lb{font-size:30px; letter-spacing:.2em; text-transform:uppercase; font-weight:700; color:var(--sky-400);}
+  #ov-tip h3{font-size:62px; line-height:1.12; font-weight:700; color:#fff; margin:0 0 22px; letter-spacing:-.01em;}
+  #ov-tip p{font-size:44px; line-height:1.45; color:#b8c4d4; margin:0;}
+
+  /* ---- 5. Source / URL credit strip (bottom-left) ---- */
+  #ov-credit{left:192px; bottom:130px; display:inline-flex; align-items:center; gap:26px;
+    background:rgba(11,17,32,.9); border:1px solid rgba(148,163,184,.24); border-radius:999px;
+    padding:22px 44px 22px 30px; box-shadow:0 20px 50px rgba(2,6,23,.5);}
+  #ov-credit .ic{width:60px; height:60px; border-radius:50%; background:rgba(56,189,248,.14);
+    display:flex; align-items:center; justify-content:center;}
+  #ov-credit .ic svg{width:34px; height:34px; color:var(--sky-400);}
+  #ov-credit .tx{font-family:var(--font-mono); font-size:42px; color:#dbe4f0;}
+  #ov-credit .tx b{color:var(--sky-400); font-weight:600;}
+
+  /* ---- 6. Subscribe / like bug (bottom-right) ---- */
+  #ov-bug{right:192px; bottom:130px; display:inline-flex; align-items:center; gap:30px;
+    background:rgba(11,17,32,.92); border:1px solid rgba(148,163,184,.24); border-radius:999px;
+    padding:22px 26px 22px 30px; box-shadow:0 22px 55px rgba(2,6,23,.55);}
+  #ov-bug .logo{width:74px; height:74px; flex:0 0 74px;}
+  #ov-bug .who{display:flex; flex-direction:column; line-height:1.15;}
+  #ov-bug .who .n{font-size:40px; font-weight:700; color:#fff;}
+  #ov-bug .who .h{font-size:30px; color:var(--slate-400); font-family:var(--font-mono);}
+  #ov-bug .sub{display:inline-flex; align-items:center; gap:18px; background:var(--grad-primary);
+    color:#fff; font-weight:700; font-size:42px; padding:20px 38px; border-radius:999px;
+    box-shadow:0 12px 30px rgba(37,99,235,.5);}
+  #ov-bug .sub svg{width:42px; height:42px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ Control panel (not exported) ============ -->
+  <aside class="panel">
+    <div class="brand">
+      <img src="assets/logo-dark.png" alt="" />
+      <div>
+        <div class="bt">Mylemans Online</div>
+        <div class="bs">Overlay Pack</div>
+      </div>
+    </div>
+
+    <h1>Overlays · 4K</h1>
+    <div class="ov-list" id="ovList"></div>
+
+    <div class="ctl-row">
+      <button class="btn primary" id="playAll">▶ Play sequence</button>
+      <button class="btn" id="showAll">Show all</button>
+    </div>
+
+    <div class="toggle-row">
+      <div class="sw on" id="swSafe"></div><span>Title / action safe guides</span>
+    </div>
+
+    <p class="hint">
+      <b>Drag a frame</b> from your footage onto the stage for context (it won't be exported).
+      Edit any text below — the preview updates live — then hit <b>Download PNG</b> for a transparent
+      3840×2160 file. Drop each onto its own track above your footage; alpha is preserved.
+    </p>
+
+    <div class="ctl-row" style="margin-top:18px;">
+      <button class="btn primary" id="dlAll">⬇ Download all 6 PNGs</button>
+    </div>
+
+    <h1 style="margin-top:26px;">Edit text</h1>
+    <div id="editor"></div>
+  </aside>
+
+  <!-- ============ Stage ============ -->
+  <div class="stage-wrap">
+    <div class="scaler" id="scaler">
+      <div class="stage" id="stage">
+        <div class="res-tag">3840 × 2160 · 4K UHD</div>
+
+        <!-- sample background (preview aid) -->
+        <div class="bg-fill">
+          <div class="bg-mock"></div>
+          <image-slot id="footage" fit="cover" placeholder="Drop a frame from your footage"></image-slot>
+        </div>
+
+        <!-- safe guides -->
+        <div class="safe show" id="safe">
+          <div class="ac"></div>
+          <div class="ti"></div>
+          <span>title safe · 5%</span>
+        </div>
+
+        <!-- 1. Title slate -->
+        <div class="ov" id="ov-slate" data-dir="scale">
+          <div class="inner">
+            <p class="eyebrow" id="s-eyebrow">Proxmox · Homelab · Automation</p>
+            <h2 id="s-title">Build Your First Proxmox Cluster</h2>
+            <div class="rule"></div>
+            <p class="sub" id="s-sub">Three nodes, shared storage, and live migration — from bare metal to running VMs.</p>
+          </div>
+          <div class="foot">
+            <img src="assets/logo-dark.png" alt="" />
+            <div>
+              <div class="ft" id="s-brand">Mylemans Online</div>
+              <div class="fh" id="s-url">mylemans.online</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Chapter label -->
+        <div class="ov" id="ov-chapter" data-dir="left">
+          <div class="step"><span class="k" id="c-label">Step</span><span class="v" id="c-num">01</span></div>
+          <div class="body"><span class="tt" id="c-title">Configure the VLAN trunk</span></div>
+        </div>
+
+        <!-- 3. Terminal / command -->
+        <div class="ov" id="ov-terminal" data-dir="up">
+          <div class="tbar">
+            <div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+            <div class="tt" id="t-title">root@pve: ~</div>
+          </div>
+          <div class="body" id="t-body"></div>
+        </div>
+
+        <!-- 4. Tip callout -->
+        <div class="ov" id="ov-tip" data-dir="right">
+          <div class="badge">
+            <div class="ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/></svg>
+            </div>
+            <span class="lb" id="p-label">Pro tip</span>
+          </div>
+          <h3 id="p-title">Snapshot before you patch</h3>
+          <p id="p-body">Proxmox snapshots are instant and roll back in seconds — take one before every kernel update.</p>
+        </div>
+
+        <!-- 5. Credit strip -->
+        <div class="ov" id="ov-credit" data-dir="up">
+          <div class="cr-qr" id="cr-qr"></div>
+          <div class="ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
+          </div>
+          <div class="tx" id="cr-text">Full guide → <b>blog.mylemans.online/proxmox-cluster</b></div>
+        </div>
+
+        <!-- 6. Subscribe bug -->
+        <div class="ov" id="ov-bug" data-dir="right">
+          <img class="logo" src="assets/logo-dark.png" alt="" />
+          <div class="who"><span class="n" id="b-name">Mylemans Online</span><span class="h" id="b-handle">@mylemansonline</span></div>
+          <span class="sub">
+            <svg viewBox="0 0 24 24" fill="#fff"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-5-1.6-1.6V10a5.4 5.4 0 0 0-4-5.2V4a1.4 1.4 0 1 0-2.8 0v.8A5.4 5.4 0 0 0 6.6 10v4.4L5 17a.8.8 0 0 0 .6 1.3h12.8A.8.8 0 0 0 19 17Z"/></svg>
+            <span id="b-btnlabel">Subscribe</span>
+          </span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ---- overlay registry ---- */
+  const OVERLAYS = [
+    {id:'ov-slate',    name:'Title slate',        pos:'full frame', hold:3200},
+    {id:'ov-chapter',  name:'Chapter label',      pos:'top-left',   hold:2600},
+    {id:'ov-terminal', name:'Command callout',    pos:'lower-left', hold:3000},
+    {id:'ov-tip',      name:'Key takeaway',       pos:'right',      hold:3000},
+    {id:'ov-credit',   name:'Source / URL strip', pos:'bottom-left',hold:2600},
+    {id:'ov-bug',      name:'Subscribe bug',      pos:'bottom-right',hold:2800},
+  ];
+
+  /* ---- build list ---- */
+  const listEl = document.getElementById('ovList');
+  OVERLAYS.forEach((o,i)=>{
+    const el = document.createElement('div');
+    el.className='ov-item'; el.dataset.id=o.id;
+    el.innerHTML = `<div class="r1"><span class="nm">${o.name}</span><span class="num">${String(i+1).padStart(2,'0')}</span></div>
+                    <div class="pos">${o.pos}</div>`;
+    el.addEventListener('click',()=>playOne(o.id));
+    listEl.appendChild(el);
+  });
+
+  const timers = {};
+  function setActive(id){
+    document.querySelectorAll('.ov-item').forEach(n=>n.classList.toggle('active', n.dataset.id===id));
+  }
+  // animated reveal (works in a real browser; rests visible)
+  function show(id){
+    const e=document.getElementById(id);
+    clearTimeout(timers[id+'_h']);
+    e.classList.remove('is-hidden','playout');
+    e.classList.remove('play'); void e.offsetWidth; e.classList.add('play');
+  }
+  // instant reveal (no animation)
+  function showInstant(id){
+    const e=document.getElementById(id);
+    clearTimeout(timers[id+'_h']);
+    e.classList.remove('is-hidden','play','playout');
+  }
+  function hide(id){
+    const e=document.getElementById(id);
+    if(e.classList.contains('is-hidden')) return;
+    e.classList.remove('play'); e.classList.add('playout');
+    timers[id+'_h']=setTimeout(()=>{ e.classList.add('is-hidden'); e.classList.remove('playout'); }, 430);
+  }
+  function hideInstant(id){
+    const e=document.getElementById(id);
+    e.classList.add('is-hidden'); e.classList.remove('play','playout');
+  }
+  function hideAll(){ OVERLAYS.forEach(o=>hideInstant(o.id)); Object.keys(timers).forEach(k=>clearTimeout(timers[k])); }
+
+  function playOne(id){
+    clearTimeout(timers[id]);
+    if(id==='ov-slate') hideAll();        // full-frame: solo it
+    setActive(id);
+    show(id);
+    const o = OVERLAYS.find(x=>x.id===id);
+    timers[id] = setTimeout(()=>{ hide(id); }, o.hold);
+  }
+
+  document.getElementById('showAll').addEventListener('click', ()=>{
+    hideAll();
+    OVERLAYS.filter(o=>o.id!=='ov-slate').forEach(o=>showInstant(o.id));
+    setActive(null);
+  });
+
+  let seqTimers=[];
+  document.getElementById('playAll').addEventListener('click', ()=>{
+    seqTimers.forEach(clearTimeout); seqTimers=[];
+    hideAll();
+    let t=200;
+    OVERLAYS.forEach(o=>{
+      seqTimers.push(setTimeout(()=>{ if(o.id==='ov-slate') hideAll(); setActive(o.id); show(o.id); }, t));
+      seqTimers.push(setTimeout(()=>hide(o.id), t+o.hold));
+      t += o.hold + 650;
+    });
+  });
+
+  /* ---- safe guides toggle ---- */
+  const swSafe=document.getElementById('swSafe'), safe=document.getElementById('safe');
+  swSafe.addEventListener('click',()=>{ swSafe.classList.toggle('on'); safe.classList.toggle('show', swSafe.classList.contains('on')); });
+
+  /* ---- scale stage to fit ---- */
+  function fit(){
+    const wrap=document.querySelector('.stage-wrap');
+    const pad=48;
+    const s=Math.min((wrap.clientWidth-pad)/3840, (wrap.clientHeight-pad)/2160);
+    document.getElementById('scaler').style.transform=`translate(-50%,-50%) scale(${s})`;
+  }
+  window.addEventListener('resize',fit); fit();
+
+  /* ---- init: hide all, then reveal the chapter label as a demo ---- */
+  OVERLAYS.forEach(o=>document.getElementById(o.id).classList.add('is-hidden'));
+  setTimeout(()=>playOne('ov-chapter'), 500);
+
+  /* ---- text editor + client-side PNG export ---- */
+  const KEY2OV={slate:'ov-slate',chapter:'ov-chapter',terminal:'ov-terminal',tip:'ov-tip',credit:'ov-credit',bug:'ov-bug'};
+  OverlayStudio.buildEditor(document.getElementById('editor'), (key)=>{
+    const id=KEY2OV[key];
+    if(id==='ov-slate'){ hideAll(); }
+    showInstant(id); setActive(id);
+  });
+  document.getElementById('dlAll').addEventListener('click',()=>OverlayStudio.downloadAll());
+</script>
+</body>
+</html>
