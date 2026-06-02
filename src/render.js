@@ -68,4 +68,37 @@ function mergeData(partial) {
   return data;
 }
 
-module.exports = { init, renderOverlay, mergeData, KEYS: OverlayCore.KEYS, FILES: OverlayCore.FILES, META: OverlayCore.META, defaultData: OverlayCore.defaultData };
+// Turn an arbitrary label into a safe filename fragment.
+function slug(s) {
+  return String(s).trim().replace(/\.png$/i, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Render an ordered list of overlay *instances* into a numbered, play-ordered
+ * set of PNGs. Each instance: { key, fields?, filename? }.
+ * Returns [{ name, data }] with zero-padded, sortable, collision-free names.
+ * @param {Array} instances
+ * @returns {{name:string, data:Buffer}[]}
+ */
+function renderPack(instances) {
+  if (!Array.isArray(instances) || instances.length === 0) {
+    throw new Error('`overlays` must be a non-empty array of { key, fields } instances');
+  }
+  const pad = Math.max(2, String(instances.length).length);
+  return instances.map((inst, i) => {
+    if (!inst || typeof inst !== 'object') throw new Error(`overlays[${i}] must be an object`);
+    const key = inst.key;
+    if (!OverlayCore.KEYS.includes(key)) {
+      throw new Error(`overlays[${i}]: unknown key '${key}' (valid: ${OverlayCore.KEYS.join(', ')})`);
+    }
+    const data = renderOverlay(key, mergeData({ [key]: inst.fields || {} }));
+    const idx = String(i + 1).padStart(pad, '0');
+    const label = inst.filename ? slug(inst.filename) : key;
+    return { name: `${idx}_${label || key}.png`, data };
+  });
+}
+
+module.exports = {
+  init, renderOverlay, renderPack, mergeData,
+  KEYS: OverlayCore.KEYS, FILES: OverlayCore.FILES, META: OverlayCore.META, defaultData: OverlayCore.defaultData
+};
