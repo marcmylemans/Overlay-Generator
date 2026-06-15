@@ -15,20 +15,28 @@ the API returns is byte-for-byte identical to one you download from the studio.
 
 Self-host it anywhere with Docker.
 
-## The six overlays
+## The overlays
 
 | # | Key | Overlay | Position |
 |---|-----|---------|----------|
-| 1 | `slate`    | Title slate (full-frame intro) | full frame |
-| 2 | `chapter`  | Chapter / step label | top-left |
-| 3 | `terminal` | Code / command callout (terminal) | lower-left |
-| 4 | `tip`      | Key takeaway / tip callout | right |
-| 5 | `credit`   | Source / URL strip (with optional scannable QR) | bottom-left |
-| 6 | `bug`      | Subscribe / like bug | bottom-right |
+| 1 | `slate`     | Title slate (full-frame intro) | full frame |
+| 2 | `chapter`   | Chapter / step label | top-left |
+| 3 | `terminal`  | Code / command callout (terminal) | lower-left |
+| 4 | `tip`       | Key takeaway / tip callout | right |
+| 5 | `credit`    | Source / URL strip (with optional scannable QR) | bottom-left |
+| 6 | `bug`       | Subscribe / like bug | bottom-right |
+| 7 | `compare`   | Comparison / explainer slide — two-column A/B, or a single centered panel | full frame |
+| 8 | `checklist` | Numbered "what you need" list with badges | left |
 
 All render at true **4K (3840×2160)** with a transparent background (the title
-slate is intentionally a full-frame opaque card), in the brand's deep-navy +
-electric-blue terminal aesthetic.
+slate and comparison slide are intentionally full-frame opaque cards), in the
+brand's deep-navy + electric-blue terminal aesthetic.
+
+> **Slideshow tip:** sequence several `compare`/`checklist` (and other) overlays
+> through `POST /api/overlays/pack.zip` and drop them on the timeline in order —
+> that play-ordered set *is* your slideshow. The `compare` slide collapses to a
+> single centered panel automatically when you leave the right side blank, so it
+> doubles as a detail/explainer slide.
 
 ---
 
@@ -184,6 +192,8 @@ overlay come straight from `GET /api/overlays`:
 | `tip`      | `label`, `title`, `body` |
 | `credit`   | `prefix`, `url`, `qr` *(boolean)*, `qrUrl` |
 | `bug`      | `name`, `handle`, `button` |
+| `compare`  | `eyebrow`, `title`, `leftHeading`, `leftBody` *(one point per line)*, `rightHeading`, `rightBody` *(leave the right side blank for a single panel)* |
+| `checklist`| `title`, `items` *(one per line; auto-numbered)* |
 
 Errors return `4xx` with `{ "error": "…" }`.
 

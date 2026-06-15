@@ -236,6 +236,43 @@
     color:#fff; font-weight:700; font-size:42px; padding:20px 38px; border-radius:999px;
     box-shadow:0 12px 30px rgba(37,99,235,.5);}
   #ov-bug .sub svg{width:42px; height:42px;}
+
+  /* ---- 7. Comparison slide (full frame) ---- */
+  #ov-compare{inset:0; width:3840px; height:2160px; padding:150px 192px; display:flex; flex-direction:column;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(37,99,235,.30), transparent 55%),
+      radial-gradient(circle at 92% 88%, rgba(56,189,248,.16), transparent 50%),
+      linear-gradient(140deg,#0b1730,#060b16 62%,#080d1a);}
+  #ov-compare .cmp-eyebrow{font-size:40px; letter-spacing:.25em; text-transform:uppercase;
+    color:var(--sky-400); font-weight:600; margin:0 0 26px;}
+  #ov-compare h2{font-size:120px; line-height:1.04; font-weight:700; letter-spacing:-.02em; color:#fff; margin:0;}
+  #ov-compare .cmp-rule{width:200px; height:10px; border-radius:999px; background:var(--grad-primary); margin:24px 0 56px;}
+  #ov-compare .cmp-cols{flex:1; display:flex; gap:80px; min-height:0; position:relative;}
+  #ov-compare .cmp-panel{flex:1; min-width:0; background:rgba(11,17,32,.92); border:1px solid rgba(148,163,184,.18);
+    border-radius:28px; padding:50px 56px; box-shadow:0 24px 60px rgba(2,6,23,.5);}
+  #ov-compare .cmp-h{font-size:56px; font-weight:700; color:#fff; margin:0 0 42px; padding-left:34px; position:relative;}
+  #ov-compare .cmp-h::before{content:""; position:absolute; left:0; top:4px; width:12px; height:54px; border-radius:6px; background:var(--grad-primary);}
+  #ov-compare ul{list-style:none; margin:0; padding:0;}
+  #ov-compare li{position:relative; padding-left:48px; font-size:44px; line-height:1.32; color:#c4d0e0; margin-bottom:26px;}
+  #ov-compare li::before{content:""; position:absolute; left:0; top:22px; width:18px; height:18px; border-radius:50%; background:var(--sky-400);}
+  #ov-compare .cmp-vs{position:absolute; left:50%; top:96px; transform:translate(-50%,-50%); width:128px; height:128px;
+    border-radius:50%; background:var(--grad-primary); border:8px solid #0b1120; display:flex; align-items:center;
+    justify-content:center; font-size:46px; font-weight:700; color:#fff; box-shadow:0 12px 30px rgba(37,99,235,.5); z-index:5;}
+  #ov-compare .cmp-cols.single{justify-content:center;}
+  #ov-compare .cmp-cols.single .cmp-panel{flex:0 1 2600px; max-width:2600px;}
+  #ov-compare .cmp-cols.single .cmp-r, #ov-compare .cmp-cols.single .cmp-vs{display:none;}
+
+  /* ---- 8. Numbered list / checklist (left, vertically centered) ---- */
+  #ov-checklist{inset:0; display:flex; align-items:center; padding-left:192px;}
+  #ov-checklist .ck-card{background:rgba(11,17,32,.93); border:1px solid rgba(148,163,184,.2); border-radius:30px;
+    padding:56px 64px 60px; box-shadow:0 30px 70px rgba(2,6,23,.5); max-width:1700px;}
+  #ov-checklist .ck-title{font-size:56px; font-weight:700; color:#fff; margin-bottom:46px;}
+  #ov-checklist .ck-items{display:flex; flex-direction:column; gap:30px;}
+  #ov-checklist .ck-item{display:flex; align-items:center; gap:30px;}
+  #ov-checklist .ck-num{flex:0 0 84px; width:84px; height:84px; border-radius:20px; background:var(--grad-primary);
+    color:#fff; font-size:46px; font-weight:700; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 20px rgba(37,99,235,.45);}
+  #ov-checklist .ck-label{font-size:46px; color:#e6edf6; white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -358,6 +395,26 @@
           </span>
         </div>
 
+        <!-- 7. Comparison slide -->
+        <div class="ov" id="ov-compare" data-dir="scale">
+          <p class="cmp-eyebrow" id="cmp-eyebrow">Side by side</p>
+          <h2 id="cmp-title">Proxmox vs. VMware</h2>
+          <div class="cmp-rule"></div>
+          <div class="cmp-cols" id="cmp-cols">
+            <div class="cmp-panel cmp-l"><div class="cmp-h" id="cmp-lh">Proxmox VE</div><ul id="cmp-lb"></ul></div>
+            <div class="cmp-vs">VS</div>
+            <div class="cmp-panel cmp-r"><div class="cmp-h" id="cmp-rh">VMware ESXi</div><ul id="cmp-rb"></ul></div>
+          </div>
+        </div>
+
+        <!-- 8. Numbered list / checklist -->
+        <div class="ov" id="ov-checklist" data-dir="left">
+          <div class="ck-card">
+            <div class="ck-title" id="ck-title">What you need</div>
+            <div class="ck-items" id="ck-items"></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -372,7 +429,12 @@
     {id:'ov-tip',      name:'Key takeaway',       pos:'right',      hold:3000},
     {id:'ov-credit',   name:'Source / URL strip', pos:'bottom-left',hold:2600},
     {id:'ov-bug',      name:'Subscribe bug',      pos:'bottom-right',hold:2800},
+    {id:'ov-compare',  name:'Comparison slide',   pos:'full frame', hold:3600},
+    {id:'ov-checklist',name:'Numbered list',      pos:'left',       hold:3200},
   ];
+
+  /* full-frame overlays are soloed (they cover the whole stage) */
+  const FULLFRAME = ['ov-slate', 'ov-compare'];
 
   /* ---- build list ---- */
   const listEl = document.getElementById('ovList');
@@ -416,7 +478,7 @@
 
   function playOne(id){
     clearTimeout(timers[id]);
-    if(id==='ov-slate') hideAll();        // full-frame: solo it
+    if(FULLFRAME.includes(id)) hideAll();   // full-frame: solo it
     setActive(id);
     show(id);
     const o = OVERLAYS.find(x=>x.id===id);
@@ -425,7 +487,7 @@
 
   document.getElementById('showAll').addEventListener('click', ()=>{
     hideAll();
-    OVERLAYS.filter(o=>o.id!=='ov-slate').forEach(o=>showInstant(o.id));
+    OVERLAYS.filter(o=>!FULLFRAME.includes(o.id)).forEach(o=>showInstant(o.id));
     setActive(null);
   });
 
@@ -435,7 +497,7 @@
     hideAll();
     let t=200;
     OVERLAYS.forEach(o=>{
-      seqTimers.push(setTimeout(()=>{ if(o.id==='ov-slate') hideAll(); setActive(o.id); show(o.id); }, t));
+      seqTimers.push(setTimeout(()=>{ if(FULLFRAME.includes(o.id)) hideAll(); setActive(o.id); show(o.id); }, t));
       seqTimers.push(setTimeout(()=>hide(o.id), t+o.hold));
       t += o.hold + 650;
     });
@@ -459,10 +521,10 @@
   setTimeout(()=>playOne('ov-chapter'), 500);
 
   /* ---- text editor + client-side PNG export ---- */
-  const KEY2OV={slate:'ov-slate',chapter:'ov-chapter',terminal:'ov-terminal',tip:'ov-tip',credit:'ov-credit',bug:'ov-bug'};
+  const KEY2OV={slate:'ov-slate',chapter:'ov-chapter',terminal:'ov-terminal',tip:'ov-tip',credit:'ov-credit',bug:'ov-bug',compare:'ov-compare',checklist:'ov-checklist'};
   OverlayStudio.buildEditor(document.getElementById('editor'), (key)=>{
     const id=KEY2OV[key];
-    if(id==='ov-slate'){ hideAll(); }
+    if(FULLFRAME.includes(id)){ hideAll(); }
     showInstant(id); setActive(id);
   });
   document.getElementById('dlAll').addEventListener('click',()=>OverlayStudio.downloadAll());
