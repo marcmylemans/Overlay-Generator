@@ -47,6 +47,24 @@ function pngDims(buf) {
     assert.ok(!a.equals(b), 'expected different output for different text');
   });
 
+  await test('compare collapses to a single panel when the right side is empty', () => {
+    const two = render.renderOverlay('compare', render.mergeData({}));
+    const one = render.renderOverlay('compare', render.mergeData({ compare: { rightHeading: '', rightBody: '' } }));
+    assert.ok(!two.equals(one), 'single-column should differ from two-column');
+  });
+
+  await test('checklist reflects its item count', () => {
+    const a = render.renderOverlay('checklist', render.mergeData({ checklist: { items: 'One\nTwo' } }));
+    const b = render.renderOverlay('checklist', render.mergeData({ checklist: { items: 'One\nTwo\nThree\nFour' } }));
+    assert.ok(!a.equals(b), 'more items should change the render');
+  });
+
+  await test('new overlays are registered in keys/meta/files', () => {
+    assert.ok(render.KEYS.includes('compare') && render.KEYS.includes('checklist'));
+    assert.strictEqual(render.FILES.compare, '07_comparison-slide');
+    assert.strictEqual(render.FILES.checklist, '08_numbered-list');
+  });
+
   await test('unknown overlay key throws', () => {
     assert.throws(() => render.renderOverlay('bogus', render.mergeData({})));
   });

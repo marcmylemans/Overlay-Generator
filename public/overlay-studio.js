@@ -49,8 +49,38 @@
     set('#b-name', d.bug.name);
     set('#b-handle', d.bug.handle);
     set('#b-btnlabel', d.bug.button);
+
+    set('#cmp-eyebrow', d.compare.eyebrow);
+    set('#cmp-title', d.compare.title);
+    set('#cmp-lh', d.compare.leftHeading);
+    set('#cmp-rh', d.compare.rightHeading);
+    renderCompare();
+
+    set('#ck-title', d.checklist.title);
+    renderChecklist();
   }
   function set(sel, val) { const el = document.querySelector(sel); if (el) el.textContent = val; }
+
+  const lines = (s) => String(s == null ? '' : s).split('\n').map((t) => t.trim()).filter(Boolean);
+
+  function renderCompare() {
+    const d = DATA.compare;
+    fillBullets('#cmp-lb', d.leftBody);
+    fillBullets('#cmp-rb', d.rightBody);
+    const two = !!(lines(d.rightBody).length || (d.rightHeading && d.rightHeading.trim()));
+    const cols = document.querySelector('#cmp-cols');
+    if (cols) cols.classList.toggle('single', !two);
+  }
+  function fillBullets(sel, body) {
+    const el = document.querySelector(sel); if (!el) return;
+    el.innerHTML = lines(body).map((t) => '<li>' + esc(t) + '</li>').join('');
+  }
+  function renderChecklist() {
+    const host = document.querySelector('#ck-items'); if (!host) return;
+    host.innerHTML = lines(DATA.checklist.items)
+      .map((it, i) => '<div class="ck-item"><span class="ck-num">' + (i + 1) + '</span><span class="ck-label">' + esc(it) + '</span></div>')
+      .join('');
+  }
 
   function renderQRPreview() {
     const host = document.querySelector('#cr-qr'); if (!host) return;
@@ -110,7 +140,13 @@
       ['prefix', 'Prefix', 'text'], ['url', 'URL', 'text'],
       ['qr', 'Show QR code', 'check'], ['qrUrl', 'QR links to', 'text']] },
     { grp: 'Subscribe bug', key: 'bug', items: [
-      ['name', 'Name', 'text'], ['handle', 'Handle', 'text'], ['button', 'Button label', 'text']] }
+      ['name', 'Name', 'text'], ['handle', 'Handle', 'text'], ['button', 'Button label', 'text']] },
+    { grp: 'Comparison slide', key: 'compare', items: [
+      ['eyebrow', 'Kicker', 'text'], ['title', 'Title', 'text'],
+      ['leftHeading', 'Left heading', 'text'], ['leftBody', 'Left points (one per line)', 'area'],
+      ['rightHeading', 'Right heading (blank = single panel)', 'text'], ['rightBody', 'Right points (one per line)', 'area']] },
+    { grp: 'Numbered list', key: 'checklist', items: [
+      ['title', 'Title', 'text'], ['items', 'Items (one per line)', 'area']] }
   ];
 
   function buildEditor(container, onEdit) {
