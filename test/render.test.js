@@ -5,6 +5,7 @@ const assert = require('assert');
 const render = require('../src/render.js');
 const { createZip } = require('../lib/zip.js');
 const QRCode = require('../lib/qrcode.js');
+const MembersCsv = require('../lib/members-csv.js');
 
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 let passed = 0;
@@ -132,6 +133,37 @@ function pngDims(buf) {
   await test('renderPack rejects empty input and unknown keys', () => {
     assert.throws(() => render.renderPack([]), /non-empty/);
     assert.throws(() => render.renderPack([{ key: 'nope' }]), /unknown key/);
+  });
+
+  await test('MembersCsv groups by tier, orders highest-first, skips blank names, sorts by tenure', () => {
+    const csv = [
+      'Lid,Linken aan profiel,Huidig level,Totale tijd op niveau (maanden),Totale tijd als lid (maanden),Laatste update,Tijdstempel',
+      'Alice,url,Tech Enthusiast,2,2,Neemt deel,2026',
+      'Bob,url,Network Architect,5,9,Neemt deel,2026',
+      'Carol,url,Tech Enthusiast,1,12,Neemt deel,2026',
+      ',url,Tech Enthusiast,3,3,Neemt deel,2026'   // blank name → skipped
+    ].join('\n');
+    const r = MembersCsv.parse(csv);
+    assert.strictEqual(r.total, 3);
+    assert.strictEqual(r.model.tier1Title, 'Network Architect');   // highest tier first
+    assert.strictEqual(r.model.tier1Names, 'Bob');
+    assert.strictEqual(r.model.tier2Title, 'Tech Enthusiast');
+    assert.strictEqual(r.model.tier2Names, 'Carol, Alice');        // tenure 12 before 2
+    assert.strictEqual(r.model.tier3Title, '');                    // empty tier stays blank → hidden
+  });
+
+  await test('MembersCsv handles quoted commas and an English header with sortBy=name', () => {
+    const csv = 'Member,Link,Current level,A,Total time as member (months),X,Y\n"Zed, Jr.",u,Tech Enthusiast,1,1,a,b\nAmy,u,Tech Enthusiast,1,5,a,b';
+    const r = MembersCsv.parse(csv, { sortBy: 'name' });
+    assert.strictEqual(r.total, 2);
+    assert.strictEqual(r.model.tier1Names, 'Amy, Zed, Jr.');       // quoted comma preserved
+  });
+
+  await test('members overlay renders from a parsed CSV model', () => {
+    const csv = 'Lid,L,Huidig level,A,Totale tijd als lid (maanden),U,T\nNoor,u,Systems Specialist,1,4,x,y';
+    const { model } = MembersCsv.parse(csv);
+    const buf = render.renderOverlay('members', render.mergeData({ members: model }));
+    assert.ok(buf.slice(0, 8).equals(PNG_SIG));
   });
 
   await test('createZip yields a valid End-Of-Central-Directory record', () => {

@@ -15,6 +15,7 @@ const express = require('express');
 const render = require('./render.js');
 const { createZip } = require('../lib/zip.js');
 const OverlayCore = require('../lib/overlay-core.js');
+const MembersCsv = require('../lib/members-csv.js');
 
 const PORT = process.env.PORT || 3000;
 const ROOT = path.join(__dirname, '..');
@@ -22,6 +23,7 @@ const ROOT = path.join(__dirname, '..');
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '256kb' }));
+app.use(express.text({ type: ['text/csv', 'application/csv', 'text/plain'], limit: '2mb' }));
 
 /* ---- static: studio frontend + shared libs + assets ---- */
 app.use(express.static(path.join(ROOT, 'public')));
@@ -66,6 +68,19 @@ function sendPng(res, buf, filename) {
 }
 
 function isValidKey(key) { return OverlayCore.KEYS.includes(key); }
+
+// CSV may arrive as a text/csv (or text/plain) body, or as JSON { "csv": "…" }.
+function getCsv(req) {
+  if (typeof req.body === 'string' && req.body.trim()) return req.body;
+  if (req.body && typeof req.body === 'object' && typeof req.body.csv === 'string') return req.body.csv;
+  throw new Error('Provide the CSV as a text/csv body or JSON { "csv": "..." }');
+}
+function csvOpts(q) {
+  const o = {};
+  if (q.sortBy) o.sortBy = String(q.sortBy);
+  if (q.order) o.order = String(q.order).split(',').map((s) => s.trim()).filter(Boolean);
+  return o;
+}
 
 /* ----------------------------------------------------------------------------
    API
@@ -124,6 +139,24 @@ app.post('/api/overlays/pack.zip', (req, res) => {
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
+});
+
+// Member overlay from a YouTube members CSV export.
+//   POST /api/members/parse        → the parsed { model, total, tiers, … } JSON
+//   POST /api/members/overlay.png  → the rendered member-thanks PNG
+// Body: a text/csv export, or JSON { "csv": "…" }. Query: sortBy, order,
+// eyebrow, title.
+app.post('/api/members/parse', (req, res) => {
+  try { res.json(MembersCsv.parse(getCsv(req), csvOpts(req.query))); }
+  catch (e) { res.status(400).json({ error: e.message }); }
+});
+app.post('/api/members/overlay.png', (req, res) => {
+  try {
+    const fields = Object.assign({}, MembersCsv.parse(getCsv(req), csvOpts(req.query)).model);
+    if (req.query.eyebrow != null) fields.eyebrow = String(req.query.eyebrow);
+    if (req.query.title != null) fields.title = String(req.query.title);
+    sendPng(res, render.renderOverlay('members', render.mergeData({ members: fields })), OverlayCore.FILES.members);
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 app.get('/api/overlays/:key.png', handleSingle((req) => req.query));
