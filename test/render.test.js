@@ -60,9 +60,25 @@ function pngDims(buf) {
   });
 
   await test('new overlays are registered in keys/meta/files', () => {
-    assert.ok(render.KEYS.includes('compare') && render.KEYS.includes('checklist'));
+    assert.ok(render.KEYS.includes('compare') && render.KEYS.includes('checklist') && render.KEYS.includes('members'));
     assert.strictEqual(render.FILES.compare, '07_comparison-slide');
     assert.strictEqual(render.FILES.checklist, '08_numbered-list');
+    assert.strictEqual(render.FILES.members, '09_member-thanks');
+  });
+
+  await test('members overlay omits empty tiers', () => {
+    const all = render.renderOverlay('members', render.mergeData({}));
+    const topOnly = render.renderOverlay('members', render.mergeData({ members: { tier2Names: '', tier3Names: '' } }));
+    assert.ok(!all.equals(topOnly), 'hiding tiers should change the render');
+    // a tier with names but a blank title still renders (names only); order is top→bottom
+    const m = render.mergeData({ members: { tier1Names: 'A, B', tier2Names: '', tier3Names: 'C' } });
+    assert.deepStrictEqual(m.members.tier1Title, 'Network Architect');
+  });
+
+  await test('members accepts comma- or newline-separated names', () => {
+    const a = render.renderOverlay('members', render.mergeData({ members: { tier1Names: 'Ada, Grace' } }));
+    const b = render.renderOverlay('members', render.mergeData({ members: { tier1Names: 'Ada\nGrace' } }));
+    assert.ok(a.equals(b), 'comma and newline separators should render identically');
   });
 
   await test('unknown overlay key throws', () => {
