@@ -27,10 +27,11 @@ Self-host it anywhere with Docker.
 | 6 | `bug`       | Subscribe / like bug | bottom-right |
 | 7 | `compare`   | Comparison / explainer slide — two-column A/B, or a single centered panel | full frame |
 | 8 | `checklist` | Numbered "what you need" list with badges | left |
+| 9 | `members`   | Member thank-you / credits — up to three tiers (empty tiers hidden) | full frame |
 
 All render at true **4K (3840×2160)** with a transparent background (the title
-slate and comparison slide are intentionally full-frame opaque cards), in the
-brand's deep-navy + electric-blue terminal aesthetic.
+slate, comparison slide and member-thanks slide are intentionally full-frame
+opaque cards), in the brand's deep-navy + electric-blue terminal aesthetic.
 
 > **Slideshow tip:** sequence several `compare`/`checklist` (and other) overlays
 > through `POST /api/overlays/pack.zip` and drop them on the timeline in order —
@@ -179,6 +180,28 @@ zero-padded, sortable and collision-free even with repeated types. Each instance
 may set an optional `filename` (used as `NN_<filename>.png`). Unlike
 `overlays.zip` (one of each type), this is built for real multi-beat episodes.
 
+### Member thanks from a YouTube CSV
+
+YouTube → Studio → *Members* exports a CSV; feed it straight in and the member
+overlay fills itself. Members are grouped by the **current level** column, tiers
+ordered highest → lowest, names sorted by tenure (longest-standing first), and
+blank rows skipped. Empty tiers (e.g. no Network Architect yet) are hidden.
+
+```bash
+# Parsed model (tweak, then send to /api/overlays/members.png or pack.zip)
+curl -X POST http://localhost:3000/api/members/parse \
+  -H 'Content-Type: text/csv' --data-binary @members.csv
+
+# Straight to a rendered PNG (optional ?title=, ?eyebrow=, ?sortBy=name, ?order=)
+curl -X POST "http://localhost:3000/api/members/overlay.png?title=Thank%20You" \
+  -H 'Content-Type: text/csv' --data-binary @members.csv -o member-thanks.png
+```
+
+You can also pass JSON `{ "csv": "..." }`. Works with YouTube's localised
+exports (column names are detected in any language, with positional fallbacks).
+In the **studio**, the *Member thanks* editor has an **⬆ Import YouTube CSV**
+button that does the same thing client-side.
+
 ### Content model
 
 Every field is optional; anything you omit keeps its default. Field names per
@@ -194,6 +217,7 @@ overlay come straight from `GET /api/overlays`:
 | `bug`      | `name`, `handle`, `button` |
 | `compare`  | `eyebrow`, `title`, `leftHeading`, `leftBody` *(one point per line)*, `rightHeading`, `rightBody` *(leave the right side blank for a single panel)* |
 | `checklist`| `title`, `items` *(one per line; auto-numbered)* |
+| `members`  | `eyebrow`, `title`, `tier1Title`/`tier1Names` (top), `tier2Title`/`tier2Names` (mid), `tier3Title`/`tier3Names` (lower) — names comma- or newline-separated; **any tier with no names is hidden entirely** |
 
 Errors return `4xx` with `{ "error": "…" }`.
 

@@ -58,6 +58,10 @@
 
     set('#ck-title', d.checklist.title);
     renderChecklist();
+
+    set('#mb-eyebrow', d.members.eyebrow);
+    set('#mb-title', d.members.title);
+    renderMembers();
   }
   function set(sel, val) { const el = document.querySelector(sel); if (el) el.textContent = val; }
 
@@ -80,6 +84,19 @@
     host.innerHTML = lines(DATA.checklist.items)
       .map((it, i) => '<div class="ck-item"><span class="ck-num">' + (i + 1) + '</span><span class="ck-label">' + esc(it) + '</span></div>')
       .join('');
+  }
+  const names = (s) => String(s == null ? '' : s).split(/[\n,]/).map((t) => t.trim()).filter(Boolean);
+  function renderMembers() {
+    const host = document.querySelector('#mb-tiers'); if (!host) return;
+    const d = DATA.members;
+    const tiers = [[d.tier1Title, d.tier1Names], [d.tier2Title, d.tier2Names], [d.tier3Title, d.tier3Names]];
+    host.innerHTML = tiers.map(([title, raw]) => {
+      const list = names(raw);
+      if (!list.length) return '';                       // empty tier → omit entirely
+      const head = (title && title.trim())
+        ? '<div class="mb-tt">' + esc(title) + '</div><div class="mb-rule"></div>' : '';
+      return '<div class="mb-tier">' + head + '<div class="mb-names">' + list.map(esc).join(' &nbsp;•&nbsp; ') + '</div></div>';
+    }).join('');
   }
 
   function renderQRPreview() {
@@ -146,11 +163,17 @@
       ['leftHeading', 'Left heading', 'text'], ['leftBody', 'Left points (one per line)', 'area'],
       ['rightHeading', 'Right heading (blank = single panel)', 'text'], ['rightBody', 'Right points (one per line)', 'area']] },
     { grp: 'Numbered list', key: 'checklist', items: [
-      ['title', 'Title', 'text'], ['items', 'Items (one per line)', 'area']] }
+      ['title', 'Title', 'text'], ['items', 'Items (one per line)', 'area']] },
+    { grp: 'Member thanks', key: 'members', items: [
+      ['eyebrow', 'Eyebrow', 'text'], ['title', 'Title', 'text'],
+      ['tier1Title', 'Top tier — title', 'text'], ['tier1Names', 'Top tier — members (comma or line)', 'area'],
+      ['tier2Title', 'Mid tier — title', 'text'], ['tier2Names', 'Mid tier — members', 'area'],
+      ['tier3Title', 'Lower tier — title', 'text'], ['tier3Names', 'Lower tier — members', 'area']] }
   ];
 
   function buildEditor(container, onEdit) {
     container.innerHTML = '';
+    const inputs = {};   // 'key.field' -> input element, so CSV import can update them in place
     FIELDS.forEach((sec) => {
       const wrap = document.createElement('div'); wrap.className = 'ed-sec';
       const head = document.createElement('div'); head.className = 'ed-head';
@@ -162,7 +185,7 @@
           const inp = document.createElement('input'); inp.type = 'checkbox'; inp.className = 'ed-cbx'; inp.checked = !!DATA[sec.key][f];
           const lab = document.createElement('span'); lab.className = 'ed-lab'; lab.textContent = label;
           inp.addEventListener('change', () => { DATA[sec.key][f] = inp.checked; render(); onEdit && onEdit(sec.key); });
-          row.appendChild(inp); row.appendChild(lab); wrap.appendChild(row); return;
+          row.appendChild(inp); row.appendChild(lab); wrap.appendChild(row); inputs[sec.key + '.' + f] = inp; return;
         }
         const row = document.createElement('label'); row.className = 'ed-row';
         const lab = document.createElement('span'); lab.className = 'ed-lab'; lab.textContent = label;
@@ -171,11 +194,42 @@
         inp.className = 'ed-inp'; inp.value = DATA[sec.key][f];
         if (type === 'area') inp.rows = (sec.key === 'terminal' ? 3 : 2);
         inp.addEventListener('input', () => { DATA[sec.key][f] = inp.value; render(); onEdit && onEdit(sec.key); });
-        row.appendChild(lab); row.appendChild(inp); wrap.appendChild(row);
+        row.appendChild(lab); row.appendChild(inp); wrap.appendChild(row); inputs[sec.key + '.' + f] = inp;
       });
+      if (sec.key === 'members') addCsvImport(wrap, inputs, onEdit);
       container.appendChild(wrap);
     });
     container.querySelectorAll('.ed-dl').forEach((b) => b.addEventListener('click', (e) => { e.preventDefault(); download(b.dataset.key); }));
+  }
+
+  // "Import YouTube CSV" control on the Member thanks section: parse the export,
+  // fill the tier fields, and refresh the live preview.
+  function addCsvImport(wrap, inputs, onEdit) {
+    if (!window.MembersCsv) return;
+    const row = document.createElement('div'); row.className = 'ed-row';
+    const btn = document.createElement('label'); btn.className = 'ed-import'; btn.textContent = '⬆ Import YouTube CSV';
+    const file = document.createElement('input'); file.type = 'file'; file.accept = '.csv,text/csv'; file.hidden = true;
+    const note = document.createElement('span'); note.className = 'ed-note';
+    btn.appendChild(file);
+    file.addEventListener('change', () => {
+      const f = file.files && file.files[0]; if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const res = window.MembersCsv.parse(String(reader.result));
+          Object.assign(DATA.members, res.model);
+          Object.keys(res.model).forEach((k) => { if (inputs['members.' + k]) inputs['members.' + k].value = res.model[k]; });
+          let msg = 'Imported ' + res.total + ' member' + (res.total === 1 ? '' : 's') + ' · ' +
+            res.tiers.map((t) => t.title + ' (' + t.count + ')').join(', ');
+          if (res.extraLevels.length) msg += ' · ignored extra tiers: ' + res.extraLevels.join(', ');
+          note.textContent = msg; note.classList.remove('err');
+          render(); onEdit && onEdit('members');
+        } catch (e) { note.textContent = 'Import failed: ' + e.message; note.classList.add('err'); }
+        file.value = '';
+      };
+      reader.readAsText(f);
+    });
+    row.appendChild(btn); row.appendChild(note); wrap.appendChild(row);
   }
 
   /* expose */
