@@ -180,6 +180,28 @@ zero-padded, sortable and collision-free even with repeated types. Each instance
 may set an optional `filename` (used as `NN_<filename>.png`). Unlike
 `overlays.zip` (one of each type), this is built for real multi-beat episodes.
 
+### Member thanks from a YouTube CSV
+
+YouTube → Studio → *Members* exports a CSV; feed it straight in and the member
+overlay fills itself. Members are grouped by the **current level** column, tiers
+ordered highest → lowest, names sorted by tenure (longest-standing first), and
+blank rows skipped. Empty tiers (e.g. no Network Architect yet) are hidden.
+
+```bash
+# Parsed model (tweak, then send to /api/overlays/members.png or pack.zip)
+curl -X POST http://localhost:3000/api/members/parse \
+  -H 'Content-Type: text/csv' --data-binary @members.csv
+
+# Straight to a rendered PNG (optional ?title=, ?eyebrow=, ?sortBy=name, ?order=)
+curl -X POST "http://localhost:3000/api/members/overlay.png?title=Thank%20You" \
+  -H 'Content-Type: text/csv' --data-binary @members.csv -o member-thanks.png
+```
+
+You can also pass JSON `{ "csv": "..." }`. Works with YouTube's localised
+exports (column names are detected in any language, with positional fallbacks).
+In the **studio**, the *Member thanks* editor has an **⬆ Import YouTube CSV**
+button that does the same thing client-side.
+
 ### Content model
 
 Every field is optional; anything you omit keeps its default. Field names per

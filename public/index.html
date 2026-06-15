@@ -8,6 +8,7 @@
 <script src="logo-data.js"></script>
 <script src="/lib/qrcode.js"></script>
 <script src="/lib/overlay-core.js"></script>
+<script src="/lib/members-csv.js"></script>
 <script src="overlay-studio.js"></script>
 <style>
   /* ===== Brand tokens (Mylemans Online) ===== */
@@ -95,6 +96,12 @@
   .ed-check{flex-direction:row; align-items:center; gap:9px; cursor:pointer; margin-top:2px;}
   .ed-check .ed-lab{font-size:12.5px; color:#cdd7e4;}
   .ed-cbx{width:16px; height:16px; accent-color:var(--blue-600); cursor:pointer; margin:0;}
+  .ed-import{display:inline-block; text-align:center; font-size:12px; font-weight:600; color:#fff;
+    background:var(--grad-primary); border-radius:999px; padding:8px 14px; cursor:pointer;
+    box-shadow:0 6px 16px rgba(37,99,235,.35);}
+  .ed-import:hover{filter:brightness(1.06);}
+  .ed-note{font-size:10.5px; line-height:1.5; color:var(--slate-400); margin-top:7px;}
+  .ed-note.err{color:#fca5a5;}
 
   /* QR card on credit strip */
   #ov-credit .cr-qr{position:absolute; left:0; bottom:calc(100% + 24px);}
