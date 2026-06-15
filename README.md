@@ -27,10 +27,11 @@ Self-host it anywhere with Docker.
 | 6 | `bug`       | Subscribe / like bug | bottom-right |
 | 7 | `compare`   | Comparison / explainer slide — two-column A/B, or a single centered panel | full frame |
 | 8 | `checklist` | Numbered "what you need" list with badges | left |
+| 9 | `members`   | Member thank-you / credits — up to three tiers (empty tiers hidden) | full frame |
 
 All render at true **4K (3840×2160)** with a transparent background (the title
-slate and comparison slide are intentionally full-frame opaque cards), in the
-brand's deep-navy + electric-blue terminal aesthetic.
+slate, comparison slide and member-thanks slide are intentionally full-frame
+opaque cards), in the brand's deep-navy + electric-blue terminal aesthetic.
 
 > **Slideshow tip:** sequence several `compare`/`checklist` (and other) overlays
 > through `POST /api/overlays/pack.zip` and drop them on the timeline in order —
@@ -194,6 +195,7 @@ overlay come straight from `GET /api/overlays`:
 | `bug`      | `name`, `handle`, `button` |
 | `compare`  | `eyebrow`, `title`, `leftHeading`, `leftBody` *(one point per line)*, `rightHeading`, `rightBody` *(leave the right side blank for a single panel)* |
 | `checklist`| `title`, `items` *(one per line; auto-numbered)* |
+| `members`  | `eyebrow`, `title`, `tier1Title`/`tier1Names` (top), `tier2Title`/`tier2Names` (mid), `tier3Title`/`tier3Names` (lower) — names comma- or newline-separated; **any tier with no names is hidden entirely** |
 
 Errors return `4xx` with `{ "error": "…" }`.
 

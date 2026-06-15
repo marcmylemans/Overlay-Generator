@@ -58,6 +58,10 @@
 
     set('#ck-title', d.checklist.title);
     renderChecklist();
+
+    set('#mb-eyebrow', d.members.eyebrow);
+    set('#mb-title', d.members.title);
+    renderMembers();
   }
   function set(sel, val) { const el = document.querySelector(sel); if (el) el.textContent = val; }
 
@@ -80,6 +84,19 @@
     host.innerHTML = lines(DATA.checklist.items)
       .map((it, i) => '<div class="ck-item"><span class="ck-num">' + (i + 1) + '</span><span class="ck-label">' + esc(it) + '</span></div>')
       .join('');
+  }
+  const names = (s) => String(s == null ? '' : s).split(/[\n,]/).map((t) => t.trim()).filter(Boolean);
+  function renderMembers() {
+    const host = document.querySelector('#mb-tiers'); if (!host) return;
+    const d = DATA.members;
+    const tiers = [[d.tier1Title, d.tier1Names], [d.tier2Title, d.tier2Names], [d.tier3Title, d.tier3Names]];
+    host.innerHTML = tiers.map(([title, raw]) => {
+      const list = names(raw);
+      if (!list.length) return '';                       // empty tier → omit entirely
+      const head = (title && title.trim())
+        ? '<div class="mb-tt">' + esc(title) + '</div><div class="mb-rule"></div>' : '';
+      return '<div class="mb-tier">' + head + '<div class="mb-names">' + list.map(esc).join(' &nbsp;•&nbsp; ') + '</div></div>';
+    }).join('');
   }
 
   function renderQRPreview() {
@@ -146,7 +163,12 @@
       ['leftHeading', 'Left heading', 'text'], ['leftBody', 'Left points (one per line)', 'area'],
       ['rightHeading', 'Right heading (blank = single panel)', 'text'], ['rightBody', 'Right points (one per line)', 'area']] },
     { grp: 'Numbered list', key: 'checklist', items: [
-      ['title', 'Title', 'text'], ['items', 'Items (one per line)', 'area']] }
+      ['title', 'Title', 'text'], ['items', 'Items (one per line)', 'area']] },
+    { grp: 'Member thanks', key: 'members', items: [
+      ['eyebrow', 'Eyebrow', 'text'], ['title', 'Title', 'text'],
+      ['tier1Title', 'Top tier — title', 'text'], ['tier1Names', 'Top tier — members (comma or line)', 'area'],
+      ['tier2Title', 'Mid tier — title', 'text'], ['tier2Names', 'Mid tier — members', 'area'],
+      ['tier3Title', 'Lower tier — title', 'text'], ['tier3Names', 'Lower tier — members', 'area']] }
   ];
 
   function buildEditor(container, onEdit) {
